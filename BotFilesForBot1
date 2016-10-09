@@ -1,0 +1,11 @@
+<!doctype html>
+<html>
+   <head>
+      <title>MyAppID</title>
+   </head>
+   <body>
+<iframe src="https://webchat.botframework.com/embed/ATestBot01?s=<add authorization here>" style="height: 502px; max-height: 502px;"></iframe>
+         
+
+   </body>
+  
