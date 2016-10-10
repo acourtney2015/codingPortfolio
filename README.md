@@ -4,4 +4,4 @@
 
 Be sure to check out the branches in this GitHub repo for additional projects such as javaScript code to create a ChatBot!
 
-![](https://giphy.com/gifs/xonOzxf2M8hNu/html5)
+![](https://github.com/acourtney2015/codingPortfolio/blob/master/giphy.gif)
