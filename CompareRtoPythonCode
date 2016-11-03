@@ -1,0 +1,213 @@
+#Importing a CSV
+##R
+diabetes <- read.csv("diabetes.csv")
+
+##python
+import pandas
+diabetes = pandas.read_csv("diabetes.csv")
+
+#Finding the number of rows-prints the number of rows as first number and number of columns
+#as second number
+
+##R
+dim(diabetes)
+##python
+diabetes.shape
+
+#Look at the first row of data
+##R
+head(diabetes, 1)
+##python
+diabetes.head(1)
+
+#Find the average (R returns NA for strings in the data; however passing na.rm=TRUE ignores NA values
+# inside the data itself)
+##R
+sapply(diabetes, mean, na.rm=TRUE)
+##python ( the .mean() method in python already ignores NA values inside the data)
+diabetes.mean()
+
+#Make pairwise scatterplots
+##R
+library(GGally)
+ggpairs(diabetes[,c("column1Name", "column2Name", "column3Name")])
+
+##python
+import seaborn as sns
+import matplotlib.pyploy as plt
+sns.pairplot(diabetes[["colum1Name", "column2Name", "column3Name"]])
+plt.show()
+
+#Make clusters and show cluster plots- remove non numeric columns,missing values (NA,NaN etc)
+#and find 5 clusters in the data. Set a random seed in order to reproduce the results later
+##R
+library(cluster)
+set.seed(1)
+isGoodCol <- function(col){
+  sum(is.na(col)) == 0 && is.numeric(col)}
+ goodCols <- sapply(diabetes, isGoodCol)
+ clusters <- kmeans(diabetes[,goodCols], centers=5)
+ labels <- clusters$cluster
+ 
+ ##python
+ from sklearn.cluster import KMeans
+ kmeans_model = KMeans(n_clusters=5, random_state=42)
+ good_columns = diabetes.get_numeric_data().dropna(axis=1)
+ kmeans_model.fit(good_columns)
+ labels = kmeans_model.labels_
+ 
+ 
+ #Plot rows by cluster (in R the plot will show the 2 components that explain 100% of the 
+ #point variability in the data using PCA through the pccomp function built into R)
+ ##R
+ diabetes2d <- prcomp(diabetes[,goodCols], center=TRUE)
+ twoColumns <- diabetes2d$x[, 1:2]
+ clusplot(twoColumns, labels)
+ 
+ ##python clusters will be a different color shading
+ from sklearn.decomposition import PCA
+ pac_2 = PCA(2)
+ plot_columns = pca_2.fit_transform(good_columns)
+ plt.scatter(x=plot_columns[:,0], y=plot_columns[:,1],c=labels)
+ plt.show()
+ 
+ # split data into training and testing sets
+ ##R
+ trainRowCount <- floor(0.8 * nrow(diabetes))
+ set.seed(1)
+ trainIndex <- sample(1:nrow(diabetes), trainRowCount)
+ train <- diabetes[trainIndex],]
+ test <- diabetes[-trainIndex,]
+ 
+ ##python 
+ train = diabetes.sample(frac=0.8, random_state=42)
+ test = diabetes.loc[~diabetes.index.isin(train.index)]
+ 
+ #Univariate linear regression (predict column2 from column1 data)
+ ##R
+ fit <- lm(column1Name ~ column2Name, data=train)
+ predictions <- predict(fit, test)
+ 
+ ##python
+ from sklearn.linear_model import LinearRegression
+ lr = LinearRegression()
+ lr.fit(train[["column1Name"]], train["column2Name"])
+ predictions = lr.predict(test[["column1]])
+ 
+ #calculate summary statistics
+ ##R
+ summary(fit)
+ 
+ ##python
+ import statsmodels.formula.api as sm
+ model = sm.ols(foluma= 'column1Name ~ column2Name', data=train)
+ fitted.summary()
+ 
+ 
+ #Fit a random forest model
+ 
+ #R
+ library(randomForest)
+predictorColumns <- c("column1Name", "column2Name", "column3Name", "column4Name", "column5Name", "column6Name")
+rf <- randomForest(train[predictorColumns], train$Column2PredictName, ntree=100)
+predictions <- predict(rf, test[predictorColumns])
+
+##python
+from sklearn.ensemble import RandomForestRegressor
+predictor_columns = ["column1Name", "column2Name", "column3Name", "column4Name", "column5Name","column6Name"]
+rf = RandomForestRegressor(n_estimators=100, min_samples_leaf=3)
+rf.fit(train[predictor_columns], train["column2PredictName"])
+predictions = rf.predict(test[predictor_columns])
+
+
+#Calulate error reporting mean squared error( MSE)
+#R
+mean((test["Column2PredictName"] - predictions) ^2)
+
+##python
+from sklearn.metrics import mean_squared_error
+mean_squared_error(test["Column2PredictName"], predictions)
+
+#Now we have a prediction lets web scrape some data from a really complicated data page
+# we will create a list containing 2 lists first with box score for cleveland CLE and
+#second with box score for Golden State Warriors GSW. Both have headers,players and in game stats
+#R
+library(RCurl)
+url <- "http://www.basketball-reference.com/boxscores/201506140GSW.html"
+data <- readLines(url)
+
+##python
+import requests
+url = "http://www.basketball-reference.com/boxscores/201506140GSW.html"
+data = requests.get(url).content
+
+#Parse the page to extract box scores
+##R
+library(rvest)
+page <- read_html(url)
+table <- html_nodes(page, ".stats_table")[3]
+rows <- html_nodes(table, "tr")
+cells <- html_nodes(rows, "td a")
+teams <- html_text(cells)
+extractRow <- function(rows, i){
+    if(i == 1){
+        return
+    }
+    row <- rows[i]
+    tag <- "td"
+    if(i == 2){
+        tag <- "th"
+    }
+    items <- html_nodes(row, tag)
+    html_text(items)
+}
+
+scrapeData <- function(team){
+    teamData <- html_nodes(page, paste("#",team,"_basic", sep=""))
+    rows <- html_nodes(teamData, "tr")
+    lapply(seq_along(rows), extractRow, rows=rows) 
+}
+
+data <- lapply(teams, scrapeData)
+
+##python
+from bs4 import BeautifulSoup
+import re
+soup = BeautifulSoup(data, 'html.parser')
+box_scores = []
+for tag in soup.find_all(id=re.compile("[A-Z]{3,}_basic")):
+    rows = []
+    for i, row in enumerate(tag.find_all("tr")):
+        if i == 0:
+            continue
+        elif i == 1:
+            tag = "th"
+        else:
+            tag = "td"
+        row_data = [item.get_text() for item in row.find_all(tag)]
+        rows.append(row_data)
+    box_scores.append(rows)
+    
+    
+acknowledgement to @vikparuchuri for helpful code
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+
+
